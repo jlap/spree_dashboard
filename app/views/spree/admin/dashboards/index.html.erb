@@ -34,42 +34,40 @@
     </div>
     <div class="row left-stats">
       <div class="col-md-12 col-xs-4">
-        <div class="row">
           <h4><%= t('index.this_week') %></h4>
-          <p><%= t('index.total') %>: <%= Spree::Money.new(total_sales_period Time.now.beginning_of_week) %></h5>
-          <p><%= t('index.avg_sale') %>: <%= Spree::Money.new(average_sales_period Time.now.beginning_of_week) %></h5>
-        </div>
+          <div class="values">
+            <p><%= t('index.total') %>:<br/> <span class="amount"><%= Spree::Money.new(total_sales_period Time.now.beginning_of_week) %></span></p>
+            <p><%= t('index.avg_sale') %>:<br/> <span class="amount"><%= Spree::Money.new(average_sales_period Time.now.beginning_of_week) %></span></p>
+          </div>
       </div>
       <div class="col-md-12 col-xs-4">
-        <div class="row">
           <h4><%= t('index.this_month') %></h4>
-          <p><%= t('index.total') %>: <%= Spree::Money.new(total_sales_period Time.now.beginning_of_month) %></h5>
-          <p><%= t('index.avg_sale') %>: <%= Spree::Money.new(average_sales_period Time.now.beginning_of_month) %></h5>
-        </div>
+          <div class="values">
+            <p><%= t('index.total') %>:<br/> <span class="amount"><%= Spree::Money.new(total_sales_period Time.now.beginning_of_month) %></span></p>
+            <p><%= t('index.avg_sale') %>:<br/> <span class="amount"><%= Spree::Money.new(average_sales_period Time.now.beginning_of_month) %></span></p>
+          </div>
       </div>
       <div class="col-md-12 col-xs-4">
-        <div class="row">
           <h4><%= t('index.last_3_month') %></h4>
-          <p><%= t('index.total') %>: <%= Spree::Money.new(total_sales_period 3.month.ago.beginning_of_day) %></h5>
-          <p><%= t('index.avg_sale') %>: <%= Spree::Money.new(average_sales_period 3.month.ago.beginning_of_day) %></h5>
-        </div>
+          <div class="values">
+            <p><%= t('index.total') %>:<br/> <span class="amount"><%= Spree::Money.new(total_sales_period 3.month.ago.beginning_of_day) %></span></p>
+            <p><%= t('index.avg_sale') %>:<br/> <span class="amount"><%= Spree::Money.new(average_sales_period 3.month.ago.beginning_of_day) %></span></p>
+          </div>
       </div>
       <div class="col-md-12 col-xs-4">
-        <div class="row">
           <h4><%= t('index.this_year') %></h4>
-          <p><%= t('index.total') %>: <%= Spree::Money.new(total_sales_period) %></h5>
-          <p><%= t('index.avg_sale') %>: <%= Spree::Money.new(average_sales_period) %></h5>
-        </div>
+          <div class="values">
+            <p><%= t('index.total') %>:<br/> <span class="amount"><%= Spree::Money.new(total_sales_period) %></span></p>
+            <p><%= t('index.avg_sale') %>:<br/> <span class="amount"><%= Spree::Money.new(average_sales_period) %></span></p>
+          </div>
       </div>
       <div class="col-md-12 col-xs-8">
-        <div class="row">
           <h4><%= t('index.avg_sale') %></h4>
-          <p><%= Spree::Money.new(average_sales_period Time.at(0)) %></h5>
+          <div class="values"><p class="amount"><%= Spree::Money.new(average_sales_period Time.at(0)) %></p></div>
           <h4><%= t('index.avg_sale_month') %></h4>
-          <p><%= number_with_precision average_num_period, precision: 2 %></h5>
+          <div class="values"><p class="amount"><%= number_with_precision average_num_period, precision: 2 %>ventes</p> </div>
           <h4><%= t('index.avg_sale_day') %></h4>
-          <p><%= number_with_precision average_num_period('doy'), precision: 2 %></h5>
-        </div>
+          <div class="values"><p class="amount"><%= number_with_precision average_num_period('doy'), precision: 2 %> ventes</p></div>
       </div>
     </div>
   </div>
@@ -164,7 +162,7 @@
       </div>
     <% end %>
 
-    <div class="col-md-6">
+    <div class="col-md-6 clear">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3><%= t('index.new_users') %></h3>
@@ -188,9 +186,10 @@
         </div>
       </div>
     </div>
+
+    <%= @charts_html if @chart_html %>
   </div>
 </div>
-
 <script type="text/javascript" charset="utf-8">
   var months = [
     '<%= t('months.january') %>',
@@ -206,6 +205,22 @@
     '<%= t('months.november') %>',
     '<%= t('months.december') %>'
   ];
+
+  // Side stats
+  $('#stats-container .values').hide();
+  $('#stats-container h4').click(function(e) {
+    if ($(e.target).next('.values').hasClass('open')) {
+      return
+    }
+    var last_toggle = $('#stats-container .values.open');
+    last_toggle.slideToggle();
+    last_toggle.removeClass('open');
+    if (last_toggle != $(this)) {
+      $(this).next('.values').slideToggle();
+      $(this).next('.values').addClass('open');
+    }
+  });
+
   //Pie
   nv.addGraph(function () {
     var region_data = <%= @pie_data.to_json.html_safe %>;
@@ -217,6 +232,8 @@
               return d.value
             })
             .showLabels(true)
+            .labelType('key')
+            .labelsOutside('value')
             .showLegend(true)
             .showTooltipPercent(true)
             .valueFormat(function (d) {
@@ -243,18 +260,28 @@
       });
       return series;
     });
+    var vals = data[0]['values'];
+    var tickValues = [];
+    if (vals) {
+      for (var i=0; i<vals.length; i=i+2) {
+        tickValues.push(vals[i].x);
+      }
+    }
     chart = nv.models.linePlusBarChart()
         .margin({top: 50, right: 80, bottom: 30, left: 80})
         .color(d3.scale.category10().range())
         .focusEnable(false);
+    if (tickValues) {
+      chart.xAxis.tickValues(tickValues);
+    }
     chart.xAxis.tickFormat(function (d) {
-      return months[d - 1]
+      return d3.time.format('%b %y')(new Date(d));
     });
     chart.y2Axis.tickFormat(function (d) {
       return d3.format(',f')(d) + '$'
     });
     chart.x2Axis.tickFormat(function (d) {
-      return months[d - 1]
+      return d3.time.format('%b %y')(new Date(d));
     });
     chart.bars.forceY([0]).padData(false);
     d3.select('#line_bar svg')
@@ -312,15 +339,15 @@ var email_data = []
     chart.tooltip.keyFormatter(function(d) {
         return d3.time.format('%d/%m/%y')(new Date(d))
       });
+    chart.useInteractiveGuideline(true);
 
     d3.select("#email-chart svg")
         .datum(email_data)
         .transition()
         .call(chart);
     nv.utils.windowResize(chart.update);
-    chart.useInteractiveGuideline(true);
 
     return chart;
   });
-
+<%= @charts_js if @chart_js %>
 </script>
