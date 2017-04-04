@@ -84,8 +84,8 @@ module Spree
 
       users = Spree::User.eager_load(:spree_roles)
         .where("(spree_roles.name != ? OR spree_roles.id IS NULL)", 'admin')
-        .where('created_at >= ?', begin_date)
-        .order('created_at')
+        .where('spree_users.created_at >= ?', begin_date)
+        .order('spree_users.created_at')
 
       users.each do |user|
         day = user.created_at.beginning_of_day.to_i * 1000
